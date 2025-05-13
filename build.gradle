@@ -62,6 +62,7 @@ repositories {
 	maven {
 		url "https://maven.ryanliptak.com/"
 	}
+	flatDir { dirs "/libs" }
 }
 
 loom {
@@ -109,9 +110,10 @@ dependencies {
 
 	//	PlayerAbilityLib
 	include(modApi("io.github.ladysnake:PlayerAbilityLib:${project.pal_version}"))
-	
+
 	//	Calio
-	include(modApi("io.github.apace100:calio:${project.calio_version}"))
+//	include(modApi("io.github.apace100:calio:${project.calio_version}"))
+	modApi "flatDir:Calio-1.14.0-alpha.9+mc.1.21.x" // modified calio version, fixes missing packet issue from forgified fabric api
 
 	//	Cloth Config
 	include(modApi("me.shedaniel.cloth:cloth-config-fabric:${project.clothconfig_version}") {
