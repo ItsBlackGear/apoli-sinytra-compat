@@ -50,6 +50,8 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -208,15 +210,8 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity, Mo
         if(tag == null) {
             return 0;
         }
-        if(fluidHeight.containsKey(tag)) {
-            return fluidHeight.getDouble(tag);
-        }
-        for(TagKey<Fluid> ft : fluidHeight.keySet()) {
-            if(Calio.areTagsEqual(RegistryKeys.FLUID, ft, tag)) {
-                return fluidHeight.getDouble(ft);
-            }
-        }
-        return 0;
+
+        return this.getFluidHeight(tag);
     }
 
     @Environment(EnvType.CLIENT)

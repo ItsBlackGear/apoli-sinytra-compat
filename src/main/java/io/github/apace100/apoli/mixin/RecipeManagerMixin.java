@@ -2,7 +2,7 @@ package io.github.apace100.apoli.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.serialization.DataResult;
 import io.github.apace100.apoli.recipe.ModifiedCraftingRecipe;
 import io.github.apace100.apoli.util.RecipeUtil;
 import net.minecraft.recipe.*;
@@ -36,11 +36,15 @@ public abstract class RecipeManagerMixin {
         });
     }
 
-    @ModifyExpressionValue(method = "apply(Ljava/util/Map;Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/profiler/Profiler;)V", at = @At(value = "NEW", target = "(Lnet/minecraft/util/Identifier;Lnet/minecraft/recipe/Recipe;)Lnet/minecraft/recipe/RecipeEntry;"))
-    private RecipeEntry<?> apoli$validateRecipe(RecipeEntry<?> original, @Local Recipe<?> recipe) {
-        return RecipeUtil.validateRecipe(recipe)
-            .map(r -> original)
-            .getOrThrow();
-    }
-
+//    @ModifyExpressionValue(
+//        method = "apply(Ljava/util/Map;Lnet/minecraft/resource/ResourceManager;Lnet/minecraft/util/profiler/Profiler;)V",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lcom/mojang/serialization/Codec;parse(Lcom/mojang/serialization/DynamicOps;Ljava/lang/Object;)Lcom/mojang/serialization/DataResult;",
+//            ordinal = 0
+//        )
+//    )
+//    private DataResult<Recipe<?>> apoli$validateRecipe(DataResult<Recipe<?>> original) {
+//        return original.flatMap(RecipeUtil::validateRecipe);
+//    }
 }

@@ -32,8 +32,7 @@ public class SubmergedInEntityConditionType extends EntityConditionType {
 
     @Override
     public boolean test(EntityConditionContext context) {
-        return context.entity() instanceof SubmergableEntity submergableEntity
-            && submergableEntity.apoli$isSubmergedInLoosely(fluid);
+        return context.entity() instanceof SubmergableEntity submergableEntity && submergableEntity.apoli$isSubmergedInLoosely(fluid);
     }
 
     @Override

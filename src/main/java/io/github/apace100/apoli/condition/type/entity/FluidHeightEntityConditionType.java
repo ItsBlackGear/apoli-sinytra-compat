@@ -45,8 +45,7 @@ public class FluidHeightEntityConditionType extends EntityConditionType {
 
     @Override
     public boolean test(EntityConditionContext context) {
-        return context.entity() instanceof SubmergableEntity submergableEntity
-            && comparison.compare(submergableEntity.apoli$getFluidHeightLoosely(fluidTag), compareTo);
+        return context.entity() instanceof SubmergableEntity submergableEntity && comparison.compare(submergableEntity.apoli$getFluidHeightLoosely(fluidTag), compareTo);
     }
 
     @Override

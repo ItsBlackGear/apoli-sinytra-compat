@@ -60,16 +60,16 @@ public class ServerPlayerInteractionManagerMixin {
         this.apoli$blockBreakDirection = direction;
     }
 
-    @ModifyExpressionValue(method = "tryBreakBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/world/ServerWorld;removeBlock(Lnet/minecraft/util/math/BlockPos;Z)Z"))
-    private boolean apoli$cacheBlockRemovedResult(boolean original, @Share("blockRemoved") LocalBooleanRef blockRemovedRef) {
-        blockRemovedRef.set(original);
-        return original;
-    }
-
     @Inject(method = "tryBreakBlock", at = {@At(value = "RETURN", ordinal = 3), @At(value = "RETURN", ordinal = 4)})
-    private void apoli$actionOnBlockBreak(BlockPos pos, CallbackInfoReturnable<Boolean> cir, @Share(value = "breakingBlock", namespace = Apoli.MODID) LocalRef<SavedBlockPosition> breakingBlockRef, @Share(value = "modifiedHarvest", namespace = Apoli.MODID) LocalBooleanRef modifiedHarvestRef, @Share("blockRemoved") LocalBooleanRef blockRemovedRef) {
-        boolean harvestedSuccessfully = blockRemovedRef.get() && modifiedHarvestRef.get();
-        PowerHolderComponent.withPowerTypes(this.player, ActionOnBlockBreakPowerType.class, powerType -> powerType.doesApply(breakingBlockRef.get(), harvestedSuccessfully), powerType -> powerType.executeActions(pos, apoli$blockBreakDirection));
+    private void apoli$actionOnBlockBreak(BlockPos pos, CallbackInfoReturnable<Boolean> cir,
+                                          @Share(value = "breakingBlock", namespace = Apoli.MODID) LocalRef<SavedBlockPosition> breakingBlockRef,
+                                          @Share(value = "modifiedHarvest", namespace = Apoli.MODID) LocalBooleanRef modifiedHarvestRef) {
+        boolean blockRemoved = cir.getReturnValue();
+        boolean harvestedSuccessfully = blockRemoved && modifiedHarvestRef.get();
+
+        PowerHolderComponent.withPowerTypes(this.player, ActionOnBlockBreakPowerType.class,
+            powerType -> powerType.doesApply(breakingBlockRef.get(), harvestedSuccessfully),
+            powerType -> powerType.executeActions(pos, apoli$blockBreakDirection));
     }
 
     @WrapOperation(method = "interactBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;onUse(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/hit/BlockHitResult;)Lnet/minecraft/util/ActionResult;"))

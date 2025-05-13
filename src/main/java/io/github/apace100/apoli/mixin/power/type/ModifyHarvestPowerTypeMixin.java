@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 public abstract class ModifyHarvestPowerTypeMixin {
@@ -30,14 +31,14 @@ public abstract class ModifyHarvestPowerTypeMixin {
 	@Mixin(AbstractBlock.class)
 	public abstract static class BlockBreakingDeltaProxy implements ToggleableFeature {
 
-		@WrapOperation(method = "calcBlockBreakingDelta", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;canHarvest(Lnet/minecraft/block/BlockState;)Z"))
-		private boolean apoli$modifyHarvest(PlayerEntity player, BlockState state, Operation<Boolean> original, BlockState mState, PlayerEntity mPlayer, BlockView world, BlockPos pos) {
+		@ModifyVariable(method = "calcBlockBreakingDelta", at = @At(value = "STORE"), ordinal = 0)
+		private int apoli$modifyHarvest(int original, BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
 			return PowerHolderComponent.getPowerTypes(player, ModifyHarvestPowerType.class)
 				.stream()
 				.filter(powerType -> powerType.doesApply(world, pos))
 				.max(ModifyHarvestPowerType::compareTo)
-				.map(ModifyHarvestPowerType::isAllowed)
-				.orElseGet(() -> original.call(player, state));
+				.map(power -> power.isAllowed() ? 30 : 100)
+				.orElse(original);
 		}
 
 	}
@@ -52,26 +53,28 @@ public abstract class ModifyHarvestPowerTypeMixin {
 		@Final
 		protected ServerPlayerEntity player;
 
+		// Inject at the beginning to cache the block position being broken
 		@Inject(method = "tryBreakBlock", at = @At("HEAD"))
 		private void apoli$cacheBreakingBlock(BlockPos pos, CallbackInfoReturnable<Boolean> cir, @Share(value = "breakingBlock", namespace = Apoli.MODID) LocalRef<SavedBlockPosition> breakingBlockRef) {
 			breakingBlockRef.set(new SavedBlockPosition(this.world, pos));
 		}
 
-		@WrapOperation(method = "tryBreakBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayerEntity;canHarvest(Lnet/minecraft/block/BlockState;)Z"))
-		private boolean apoli$modifyHarvest(ServerPlayerEntity player, BlockState state, Operation<Boolean> original, @Share(value = "breakingBlock", namespace = Apoli.MODID) LocalRef<SavedBlockPosition> breakingBlockRef, @Share(value = "modifiedHarvest", namespace = Apoli.MODID) LocalBooleanRef modifiedHarvestRef) {
-
-			boolean result = PowerHolderComponent.getPowerTypes(this.player, ModifyHarvestPowerType.class)
+		// Modify the boolean variable holding the result of player.canHarvest()
+		@ModifyVariable(
+			method = "tryBreakBlock",
+			// Target the STORE operation for the second boolean variable in the relevant scope.
+			// 'bl' is the first (ordinal 0), the result of canHarvest() is the second (ordinal 1).
+			at = @At(value = "STORE"),
+			ordinal = 1 // Target the second boolean variable stored in this part of the method
+		)
+		private boolean apoli$modifyHarvestResult(boolean originalHarvestResult, @Share(value = "breakingBlock", namespace = Apoli.MODID) LocalRef<SavedBlockPosition> breakingBlockRef) {
+			// Apply the power logic, using the original harvest result as the fallback
+			return PowerHolderComponent.getPowerTypes(this.player, ModifyHarvestPowerType.class)
 				.stream()
-				.filter(powerType -> powerType.doesApply(breakingBlockRef.get()))
+				.filter(powerType -> powerType.doesApply(breakingBlockRef.get())) // Use cached position
 				.max(ModifyHarvestPowerType::compareTo)
 				.map(ModifyHarvestPowerType::isAllowed)
-				.orElseGet(() -> original.call(player, state));
-
-			modifiedHarvestRef.set(result);
-			return result;
-
+				.orElse(originalHarvestResult); // Fallback to original result if no power applies
 		}
-
 	}
-
 }

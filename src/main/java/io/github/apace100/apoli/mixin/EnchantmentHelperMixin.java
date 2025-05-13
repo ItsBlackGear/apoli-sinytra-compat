@@ -1,8 +1,6 @@
 package io.github.apace100.apoli.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.apace100.apoli.power.type.ModifyEnchantmentLevelPowerType;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.enchantment.Enchantment;
@@ -11,14 +9,16 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(EnchantmentHelper.class)
 public class EnchantmentHelperMixin {
-
-    @WrapOperation(method = "getLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/component/type/ItemEnchantmentsComponent;getLevel(Lnet/minecraft/registry/entry/RegistryEntry;)I"))
-    private static int apoli$modifyEnchantmentsOnLevelQuery(ItemEnchantmentsComponent enchantmentsComponent, RegistryEntry<Enchantment> enchantment, Operation<Integer> original, RegistryEntry<Enchantment> mEnchantment, ItemStack stack) {
-        return original.call(ModifyEnchantmentLevelPowerType.getAndUpdateModifiedEnchantments(stack, enchantmentsComponent), enchantment);
+    @Inject(method = "getLevel", at = @At("HEAD"), cancellable = true)
+    private static void apoli$modifyEnchantmentsOnLevelQuery(RegistryEntry<Enchantment> enchantment, ItemStack stack, CallbackInfoReturnable<Integer> cir) {
+        ItemEnchantmentsComponent components = ModifyEnchantmentLevelPowerType.getAndUpdateModifiedEnchantments(stack, EnchantmentHelper.getEnchantments(stack));
+        cir.setReturnValue(components.getLevel(enchantment));
     }
 
     @ModifyVariable(method = "forEachEnchantment(Lnet/minecraft/item/ItemStack;Lnet/minecraft/enchantment/EnchantmentHelper$Consumer;)V", at = @At("STORE"))

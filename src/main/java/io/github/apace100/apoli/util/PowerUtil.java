@@ -30,7 +30,7 @@ public class PowerUtil {
 
 				Power power = powerType.getPower();
 
-				Identifier powerTypeId = power.getType().getConfig().id();
+				Identifier powerTypeId = power.getPowerType().getConfig().id();
 				StringBuilder powerString = new StringBuilder();
 
 				if (power instanceof SubPower subPower) {

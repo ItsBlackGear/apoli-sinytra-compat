@@ -36,13 +36,13 @@ public abstract class InGameHudMixin {
 
     @Shadow protected abstract PlayerEntity getCameraPlayer();
 
+    @Shadow @Final private LayeredDrawer layeredDrawer;
+
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/hud/InGameHud;layeredDrawer:Lnet/minecraft/client/gui/LayeredDrawer;", opcode = Opcodes.GETFIELD))
-    private void apoli$renderResourceBars(MinecraftClient client, CallbackInfo ci, @Local(ordinal = 0) LayeredDrawer layeredDrawer) {
-
+    private void apoli$renderResourceBars(MinecraftClient client, CallbackInfo ci) {
         for (GameHudRender hudRender : GameHudRender.HUD_RENDERS) {
-            ((LayeredDrawerAccessor) layeredDrawer).getLayers().add(3, hudRender::render);
+            ((LayeredDrawerAccessor) this.layeredDrawer).getLayers().add(hudRender::render);
         }
-
     }
 
     @Unique

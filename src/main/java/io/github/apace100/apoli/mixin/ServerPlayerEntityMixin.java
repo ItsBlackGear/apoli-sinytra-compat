@@ -39,6 +39,7 @@ import net.minecraft.util.Pair;
 import net.minecraft.util.Unit;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -90,34 +91,30 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity implements Sc
         throw new AssertionError();
     }
 
+    @Shadow public abstract void setSpawnPoint(RegistryKey<World> dimension, @Nullable BlockPos pos, float angle, boolean forced, boolean sendMessage);
+
+    @Shadow public abstract void sendMessageToClient(Text message, boolean overlay);
+
     private ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(world, pos, yaw, gameProfile);
     }
 
-    @WrapOperation(method = "trySleep", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayerEntity;setSpawnPoint(Lnet/minecraft/registry/RegistryKey;Lnet/minecraft/util/math/BlockPos;FZZ)V"))
-    private void apoli$preventSleep(ServerPlayerEntity serverPlayer, RegistryKey<World> dimension, BlockPos pos, float angle, boolean forced, boolean sendMessage, Operation<Void> original, @Cancellable CallbackInfoReturnable<Either<SleepFailureReason, Unit>> cir) {
-
+    @Inject(method = "trySleep", at = @At("HEAD"), cancellable = true)
+    private void apoli$preventSleep(BlockPos pos, CallbackInfoReturnable<Either<SleepFailureReason, Unit>> cir) {
         List<PreventSleepPowerType> preventSleepPowers = PowerHolderComponent.getPowerTypes(this, PreventSleepPowerType.class)
             .stream()
             .filter(type -> type.doesPrevent(this.getWorld(), pos))
             .sorted(Comparator.comparing(PreventSleepPowerType::getPriority))
             .toList();
 
-        if (preventSleepPowers.isEmpty()) {
-            original.call(serverPlayer, dimension, pos, angle, forced, sendMessage);
-        }
-
-        else {
-
+        if (!preventSleepPowers.isEmpty()) {
             if (preventSleepPowers.stream().allMatch(PreventSleepPowerType::doesAllowSpawnPoint)) {
-                original.call(serverPlayer, dimension, pos, angle, forced, sendMessage);
+                this.setSpawnPoint(this.getWorld().getRegistryKey(), pos, this.getYaw(), false, true);
             }
 
             cir.setReturnValue(Either.left(SleepFailureReason.OTHER_PROBLEM));
-            this.sendMessage(preventSleepPowers.getLast().getMessage(), true);
-
+            this.sendMessageToClient(preventSleepPowers.getLast().getMessage(), true);
         }
-
     }
 
     @ModifyReturnValue(method = "getSpawnPointDimension", at = @At("RETURN"))
